@@ -1,0 +1,3 @@
+-- Bronze load is orchestrated by GCSToBigQueryOperator.
+-- Destination: customer_bronze_dev.customers_raw
+-- CSV schema is autodetected for this learning project. In production, prefer an explicit schema.

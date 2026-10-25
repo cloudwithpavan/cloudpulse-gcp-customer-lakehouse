@@ -1,0 +1,6 @@
+customer_id,full_name,email,city,salary
+1001,Asha Rao,asha.rao@example.com,Bangalore,60000
+1002,Ravi Kumar,ravi.kumar@example.com,Hyderabad,70000
+1003,Meena Das,meena.das@example.com,Chennai,35000
+1004,Arjun Reddy,arjun.reddy@example.com,Hyderabad,65000
+1005,Kiran Shah,kiran.shah@example.com,Bangalore,40000

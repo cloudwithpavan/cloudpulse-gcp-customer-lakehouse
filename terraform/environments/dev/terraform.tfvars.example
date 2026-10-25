@@ -1,0 +1,6 @@
+project_id           = "my-project-77-511616"
+region               = "us-central1"
+location             = "US"
+environment          = "dev"
+deploy_composer      = false
+gcs_file             = "incoming/customers.csv"

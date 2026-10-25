@@ -1,0 +1,4 @@
+# Composer supplies Airflow and Google providers in the managed environment.
+# Keep this file for local/shared Python dependencies only.
+google-cloud-storage>=2.14,<4
+google-cloud-bigquery>=3.20,<4
