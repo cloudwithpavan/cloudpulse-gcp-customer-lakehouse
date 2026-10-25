@@ -254,13 +254,13 @@ The `cloudpulse-documentation/docs/screenshots/` folder contains numbered screen
 Use the evidence to understand the implemented path; the screenshots are point-in-time results, not a guarantee that deployed cloud resources are still active.
 
 
-## 📸 Project evidence gallery
+## 📸 Project execution evidence
 
-These screenshots are embedded directly below, so they are visible on the GitHub README page without opening separate files.
+The following screenshots show the actual cloud setup, Airflow execution, storage events, and BigQuery outputs. They are embedded in this README for quick review.
 
-### Google Cloud Composer environment
+### Cloud Composer environment
 
-![Google Cloud Composer environment](cloudpulse-documentation/docs/screenshots/01-gcp-airflow-environment.png)
+![Cloud Composer environment](cloudpulse-documentation/docs/screenshots/01-gcp-airflow-environment.png)
 
 ### Airflow DAG overview
 
@@ -270,21 +270,17 @@ These screenshots are embedded directly below, so they are visible on the GitHub
 
 ![Sensor DAG run summary](cloudpulse-documentation/docs/screenshots/03-sensor-dag-run-summary.png)
 
-### Latest sensor DAG run summary
-
-![Latest sensor DAG run summary](cloudpulse-documentation/docs/screenshots/04-sensor-dag-run-summary-latest.png)
-
 ### Sensor task graph
 
 ![Sensor task graph](cloudpulse-documentation/docs/screenshots/05-sensor-task-graph.png)
 
-### Sensor task logs
+### Sensor task execution logs
 
-![Sensor task logs](cloudpulse-documentation/docs/screenshots/06-sensor-task-logs.png)
+![Sensor task execution logs](cloudpulse-documentation/docs/screenshots/06-sensor-task-logs.png)
 
-### BigQuery Bronze, Silver, and Gold results
+### BigQuery Bronze, Silver, and Gold output
 
-![BigQuery Bronze, Silver, and Gold results](cloudpulse-documentation/docs/screenshots/07-bigquery-bronze-silver-gold-results.png)
+![BigQuery Bronze, Silver, and Gold output](cloudpulse-documentation/docs/screenshots/07-bigquery-bronze-silver-gold-results.png)
 
 ### Pub/Sub subscription
 
@@ -294,9 +290,9 @@ These screenshots are embedded directly below, so they are visible on the GitHub
 
 ![Cloud Logging evidence](cloudpulse-documentation/docs/screenshots/09-cloud-logging.png)
 
-### Pub/Sub topic in Google Cloud Console
+### Pub/Sub console
 
-![Pub/Sub topic in Google Cloud Console](cloudpulse-documentation/docs/screenshots/10-pubsub-console.png)
+![Pub/Sub console](cloudpulse-documentation/docs/screenshots/10-pubsub-console.png)
 
 ### Event-driven DAG details
 
@@ -322,21 +318,17 @@ These screenshots are embedded directly below, so they are visible on the GitHub
 
 ![Successful sensor run](cloudpulse-documentation/docs/screenshots/16-sensor-successful-run.png)
 
-### CSV upload to Cloud Storage
+### CSV uploaded to Cloud Storage
 
-![CSV upload to Cloud Storage](cloudpulse-documentation/docs/screenshots/17-storage-csv-upload.png)
+![CSV uploaded to Cloud Storage](cloudpulse-documentation/docs/screenshots/17-storage-csv-upload.png)
 
-### Incoming object in Cloud Storage
+### CSV object in the incoming storage path
 
-![Incoming object in Cloud Storage](cloudpulse-documentation/docs/screenshots/18-storage-incoming-object.png)
+![CSV object in the incoming storage path](cloudpulse-documentation/docs/screenshots/18-storage-incoming-object.png)
 
-### Cloud Composer Airflow UI
+### Composer Airflow UI
 
-![Cloud Composer Airflow UI](cloudpulse-documentation/docs/screenshots/19-composer-airflow-ui.png)
-
-### GitHub repository evidence
-
-![GitHub repository evidence](cloudpulse-documentation/docs/screenshots/20-github-repository-after-upload.png)
+![Composer Airflow UI](cloudpulse-documentation/docs/screenshots/19-composer-airflow-ui.png)
 
 ## 🔐 Security and cost notes
 
