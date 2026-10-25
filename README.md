@@ -84,11 +84,11 @@ A sensor's `poke_interval` is the interval between checks during an active DAG r
 
 ### Sensor execution evidence
 
-![Sensor DAG summary](docs/screenshots/02-gcs-sensor-run-summary.png)
+![Sensor DAG summary](cloudpulse-documentation/docs/screenshots/03-sensor-dag-run-summary.png)
 
-![Sensor task graph](docs/screenshots/03-gcs-sensor-task-graph.png)
+![Sensor task graph](cloudpulse-documentation/docs/screenshots/05-sensor-task-graph.png)
 
-![Sensor execution logs](docs/screenshots/05-sensor-execution-logs.png)
+![Sensor execution logs](cloudpulse-documentation/docs/screenshots/06-sensor-task-logs.png)
 
 ## ⚡ Event-driven extension
 
@@ -103,13 +103,13 @@ The intended event path is:
 
 The screenshots document the event DAG and Pub/Sub resources. **Automatic triggering only works when the Pub/Sub subscription consumer/Cloud Run handler and its IAM/API configuration are deployed and connected.** Creating a topic or notification alone does not trigger Airflow.
 
-![All Airflow DAGs](docs/screenshots/01-airflow-dags-overview.png)
+![All Airflow DAGs](cloudpulse-documentation/docs/screenshots/02-airflow-dags-overview.png)
 
-![Pub/Sub subscription](docs/screenshots/06-pubsub-subscription.png)
+![Pub/Sub subscription](cloudpulse-documentation/docs/screenshots/08-pubsub-subscription.png)
 
-![Event DAG details](docs/screenshots/09-event-dag-details.png)
+![Event DAG details](cloudpulse-documentation/docs/screenshots/11-event-dag-details.png)
 
-![Event DAG diagram](docs/screenshots/10-event-dag-diagram.png)
+![Event DAG diagram](cloudpulse-documentation/docs/screenshots/12-event-dag-architecture.png)
 
 ## 🧱 Data layers
 
@@ -121,7 +121,7 @@ The screenshots document the event DAG and Pub/Sub resources. **Automatic trigge
 
 The screenshots show one successful test run with **10 Bronze rows, 10 Silver rows, and 4 Gold city-level rows**. Results depend on the uploaded input CSV.
 
-![BigQuery output counts](docs/screenshots/11-bigquery-query-results.png)
+![BigQuery output counts](cloudpulse-documentation/docs/screenshots/07-bigquery-bronze-silver-gold-results.png)
 
 ## 🧰 Tools and services
 
@@ -242,7 +242,7 @@ Adapt test commands to the actual test configuration in the repository.
 
 ## 🔎 Validation and output evidence
 
-The `docs/screenshots/` folder contains numbered screenshots from the working GCP console and Airflow UI, including:
+The `cloudpulse-documentation/docs/screenshots/` folder contains numbered screenshots from the working GCP console and Airflow UI, including:
 
 - Airflow DAG list and status.
 - Sensor run summary and task graph.
@@ -252,6 +252,91 @@ The `docs/screenshots/` folder contains numbered screenshots from the working GC
 - BigQuery query results.
 
 Use the evidence to understand the implemented path; the screenshots are point-in-time results, not a guarantee that deployed cloud resources are still active.
+
+
+## 📸 Project evidence gallery
+
+These screenshots are embedded directly below, so they are visible on the GitHub README page without opening separate files.
+
+### Google Cloud Composer environment
+
+![Google Cloud Composer environment](cloudpulse-documentation/docs/screenshots/01-gcp-airflow-environment.png)
+
+### Airflow DAG overview
+
+![Airflow DAG overview](cloudpulse-documentation/docs/screenshots/02-airflow-dags-overview.png)
+
+### Sensor DAG run summary
+
+![Sensor DAG run summary](cloudpulse-documentation/docs/screenshots/03-sensor-dag-run-summary.png)
+
+### Latest sensor DAG run summary
+
+![Latest sensor DAG run summary](cloudpulse-documentation/docs/screenshots/04-sensor-dag-run-summary-latest.png)
+
+### Sensor task graph
+
+![Sensor task graph](cloudpulse-documentation/docs/screenshots/05-sensor-task-graph.png)
+
+### Sensor task logs
+
+![Sensor task logs](cloudpulse-documentation/docs/screenshots/06-sensor-task-logs.png)
+
+### BigQuery Bronze, Silver, and Gold results
+
+![BigQuery Bronze, Silver, and Gold results](cloudpulse-documentation/docs/screenshots/07-bigquery-bronze-silver-gold-results.png)
+
+### Pub/Sub subscription
+
+![Pub/Sub subscription](cloudpulse-documentation/docs/screenshots/08-pubsub-subscription.png)
+
+### Cloud Logging evidence
+
+![Cloud Logging evidence](cloudpulse-documentation/docs/screenshots/09-cloud-logging.png)
+
+### Pub/Sub topic in Google Cloud Console
+
+![Pub/Sub topic in Google Cloud Console](cloudpulse-documentation/docs/screenshots/10-pubsub-console.png)
+
+### Event-driven DAG details
+
+![Event-driven DAG details](cloudpulse-documentation/docs/screenshots/11-event-dag-details.png)
+
+### Event-driven DAG architecture
+
+![Event-driven DAG architecture](cloudpulse-documentation/docs/screenshots/12-event-dag-architecture.png)
+
+### Event-driven DAG run history
+
+![Event-driven DAG run history](cloudpulse-documentation/docs/screenshots/13-event-dag-run-history.png)
+
+### Successful event-driven DAG run
+
+![Successful event-driven DAG run](cloudpulse-documentation/docs/screenshots/14-event-dag-run-success.png)
+
+### Sensor task details
+
+![Sensor task details](cloudpulse-documentation/docs/screenshots/15-sensor-task-details.png)
+
+### Successful sensor run
+
+![Successful sensor run](cloudpulse-documentation/docs/screenshots/16-sensor-successful-run.png)
+
+### CSV upload to Cloud Storage
+
+![CSV upload to Cloud Storage](cloudpulse-documentation/docs/screenshots/17-storage-csv-upload.png)
+
+### Incoming object in Cloud Storage
+
+![Incoming object in Cloud Storage](cloudpulse-documentation/docs/screenshots/18-storage-incoming-object.png)
+
+### Cloud Composer Airflow UI
+
+![Cloud Composer Airflow UI](cloudpulse-documentation/docs/screenshots/19-composer-airflow-ui.png)
+
+### GitHub repository evidence
+
+![GitHub repository evidence](cloudpulse-documentation/docs/screenshots/20-github-repository-after-upload.png)
 
 ## 🔐 Security and cost notes
 
