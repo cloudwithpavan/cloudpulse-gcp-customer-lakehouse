@@ -1,34 +1,28 @@
-# CloudPulse Architecture Notes
+# CloudPulse — Architecture
 
-## Primary scheduled sensor pipeline
+## Scheduled sensor pipeline
 
 ```mermaid
 flowchart TD
-    A[CSV uploaded to Cloud Storage] --> B[wait_for_csv<br/>GCSObjectExistenceSensor]
-    B --> C[load_bronze<br/>GCS to BigQuery]
-    C --> D[build_silver<br/>clean and standardize]
-    D --> E[build_gold<br/>city-level aggregation]
-    E --> F[validate_reconciliation<br/>row-count checks]
+    A[CSV in Cloud Storage] --> B[wait_for_csv: GCSObjectExistenceSensor]
+    B --> C[Load Bronze]
+    C --> D[Transform Silver]
+    D --> E[Aggregate Gold]
+    E --> F[Validate reconciliation]
 ```
 
-The sensor waits for the configured object to exist before downstream tasks proceed. Sensor polling interval and DAG scheduling interval are separate settings.
-
-## Event-driven pipeline
+## Event-driven extension
 
 ```mermaid
 flowchart TD
     A[Cloud Storage OBJECT_FINALIZE] --> B[Pub/Sub topic]
     B --> C[Subscription consumer / Cloud Run]
     C --> D[Trigger Airflow DAG with object_name]
-    D --> E[Resolve and validate object path]
+    D --> E[Validate object path]
     E --> F[Bronze]
     F --> G[Silver]
     G --> H[Gold]
     H --> I[Reconciliation]
 ```
 
-The event-driven pipeline requires the subscription consumer and Airflow trigger permissions to be correctly deployed. A topic and notification alone do not trigger an Airflow DAG.
-
-## Screenshot index
-
-See [`screenshots/`](screenshots/) for ordered evidence. The README embeds the main screenshots.
+The sensor pipeline and event-driven pipeline are separate DAGs. The event-driven path requires the Pub/Sub consumer and permissions to be deployed and connected; a topic/notification by itself does not trigger Airflow.
