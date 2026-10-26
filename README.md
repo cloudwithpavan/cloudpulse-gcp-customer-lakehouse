@@ -56,6 +56,26 @@ flowchart TB
     class GOLD gold;
     class QA qa;
 ```
+## 📁 Repository structure
+
+```text
+cloudpulse-gcp-customer-lakehouse/
+├── .github/
+├── cloudrun/                         # Event handler / trigger service
+├── dags/                             # Sensor and event DAGs
+├── data/                             # Sample CSV data
+├── docs/
+│   ├── architecture.md
+│   └── screenshots/                  # Inline README evidence (20 named images)
+├── sql/                              # SQL transformations / queries
+├── terraform/                        # Environments and reusable modules
+├── tests/
+├── requirements.txt
+├── requirements-dev.txt
+├── .gitignore
+├── LICENSE
+└── README.md
+```
 
 ### 2. Event-driven extension
 
@@ -95,6 +115,17 @@ flowchart LR
 5. `build_silver` applies the cleaning / standardization logic.
 6. `build_gold` creates the city-level reporting output.
 7. `validate_reconciliation` compares layer row counts; review the task logs and BigQuery output.
+
+## 🪣 Cloud Storage input evidence
+
+The raw CSV is stored in the GCS bucket under the `incoming/` prefix. The screenshots below show the infrastructure overview and input object used in the workflow.
+
+![GCP infrastructure overview](docs/screenshots/02-gcp-infrastructure-overview.png)
+
+![Cloud Storage input](docs/screenshots/03-cloud-storage-input.png)
+
+![Raw CSV in GCS](docs/screenshots/04-raw-csv-in-gcs.png)
+
 
 ## ⭐ Main feature: GCS sensor
 
@@ -184,15 +215,7 @@ The event DAG, `customer_lakehouse_event_pipeline`, is designed to accept an upl
 
 ![Successful event pipeline run](docs/screenshots/20-event-pipeline-successful-run.png)
 
-## 🪣 Cloud Storage input evidence
 
-The raw CSV is stored in the GCS bucket under the `incoming/` prefix. The screenshots below show the infrastructure overview and input object used in the workflow.
-
-![GCP infrastructure overview](docs/screenshots/02-gcp-infrastructure-overview.png)
-
-![Cloud Storage input](docs/screenshots/03-cloud-storage-input.png)
-
-![Raw CSV in GCS](docs/screenshots/04-raw-csv-in-gcs.png)
 
 ## 🧰 Technology stack
 
@@ -208,26 +231,6 @@ The raw CSV is stored in the GCS bucket under the `incoming/` prefix. The screen
 | **SQL** | Cleaning, aggregation and reconciliation |
 | **Git / GitHub** | Source control and documentation |
 
-## 📁 Repository structure
-
-```text
-cloudpulse-gcp-customer-lakehouse/
-├── .github/
-├── cloudrun/                         # Event handler / trigger service
-├── dags/                             # Sensor and event DAGs
-├── data/                             # Sample CSV data
-├── docs/
-│   ├── architecture.md
-│   └── screenshots/                  # Inline README evidence (20 named images)
-├── sql/                              # SQL transformations / queries
-├── terraform/                        # Environments and reusable modules
-├── tests/
-├── requirements.txt
-├── requirements-dev.txt
-├── .gitignore
-├── LICENSE
-└── README.md
-```
 
 ## 🚀 Setup and run
 
@@ -313,9 +316,23 @@ Adjust the test command if the repository's test configuration differs.
 - Composer is a managed service with ongoing cost; delete unused environments only after reviewing dependencies and Terraform state.
 - The sensor DAG and event DAG are distinct workflows; the existence of a Pub/Sub topic alone does not guarantee automatic DAG triggering.
 
-## 👤 Author
+# ⭐ Support
 
-**Pavan Kumar** · [GitHub @cloudwithpavan](https://github.com/cloudwithpavan)
+If you find this project useful, consider **starring the repository**.
+
+---
+
+# 👨‍💻 Author
+
+**Pavan Kumar Gummadi**
+
+Data Engineer | Bigquery | gooogle cloud | Terraform | Airflow
+
+GitHub
+https://github.com/cloudwithpavan
+
+Email
+[pavan7071@gmail.com](mailto:pavan7071@gmail.com)
 
 ---
 
