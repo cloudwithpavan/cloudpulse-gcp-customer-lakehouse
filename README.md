@@ -3,174 +3,133 @@
 # ☁️ CloudPulse
 ### GCP Customer Data Lakehouse
 
-**An Infrastructure-as-Code data engineering project with sensor-based ingestion, event-driven processing, and Bronze → Silver → Gold analytics.**
+**Terraform • Cloud Storage • Cloud Composer / Apache Airflow • BigQuery • Pub/Sub • Cloud Run**
 
-![Google Cloud](https://img.shields.io/badge/Google%20Cloud-GCP-4285F4?logo=googlecloud&logoColor=white)
-![Terraform](https://img.shields.io/badge/Infrastructure-Terraform-7B42BC?logo=terraform&logoColor=white)
-![Apache Airflow](https://img.shields.io/badge/Orchestration-Apache%20Airflow-017CEE?logo=apacheairflow&logoColor=white)
-![BigQuery](https://img.shields.io/badge/Warehouse-BigQuery-669DF6?logo=googlebigquery&logoColor=white)
-![Python](https://img.shields.io/badge/Language-Python-3776AB?logo=python&logoColor=white)
+A hands-on data engineering project demonstrating sensor-based CSV ingestion, a Bronze → Silver → Gold analytics flow, reconciliation, and an event-driven extension.
 
 </div>
 
 ---
 
-## 📌 Project at a glance
+## Project overview
 
-CloudPulse is a GCP data lakehouse demo that ingests customer CSV data from Cloud Storage, orchestrates processing with Cloud Composer (managed Apache Airflow), and creates analytics-ready tables in BigQuery.
+CloudPulse lands customer CSV files in Google Cloud Storage (GCS), orchestrates processing through Cloud Composer (managed Apache Airflow), and publishes data into BigQuery layers. The primary workflow highlights `GCSObjectExistenceSensor`, which waits for the configured object before allowing downstream ingestion. A separate, unscheduled event DAG demonstrates processing a CSV object name passed in the DAG-run configuration.
 
-> **⭐ Key feature: Google Cloud Storage sensor.** The primary scheduled DAG uses `GCSObjectExistenceSensor` to wait for the configured CSV object before proceeding. This makes file readiness an explicit orchestration step instead of immediately attempting ingestion. A separate event-triggered DAG is also included to demonstrate a Pub/Sub-based upload event workflow.
+### Highlights
 
-### What this project demonstrates
+- Provision cloud infrastructure with Terraform.
+- Use a GCS sensor as the main file-readiness gate.
+- Load raw records into Bronze, standardize records in Silver, and aggregate reporting data in Gold.
+- Reconcile and inspect the outputs in BigQuery.
+- Demonstrate a separate GCS `OBJECT_FINALIZE` → Pub/Sub → Cloud Run → Airflow event path.
+- Keep screenshots of actual console, Airflow, and query evidence in `docs/screenshots/`.
 
-- Provisioning GCP resources using Terraform.
-- Orchestrating data processing with Cloud Composer / Apache Airflow.
-- **Sensor-based file detection** with `GCSObjectExistenceSensor`.
-- An event-driven extension using Cloud Storage object-finalize notifications, Pub/Sub, and an event DAG.
-- BigQuery Bronze, Silver, and Gold layers.
-- SQL transformations and row-count reconciliation.
-- Evidence-based validation using Airflow run history, task logs, and BigQuery query results.
-
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TB
-    CSV[Customer CSV file] --> GCS[Google Cloud Storage<br/>incoming/]
-    GCS --> SENSOR[GCSObjectExistenceSensor<br/>Primary scheduled DAG]
-    SENSOR --> BRONZE[BigQuery Bronze<br/>customers_raw]
-    BRONZE --> SILVER[BigQuery Silver<br/>customers_cleaned]
-    SILVER --> GOLD[BigQuery Gold<br/>customer_city_report]
-    GOLD --> CHECK[Reconciliation / validation]
-
-    GCS -. OBJECT_FINALIZE notification .-> PS[Pub/Sub topic]
-    PS -. upload event .-> HANDLER[Cloud Run event handler]
-    HANDLER -. trigger with object_name .-> EVENTDAG[Event DAG<br/>customer_lakehouse_event_pipeline]
-    EVENTDAG --> BRONZE
+  CSV[Customer CSV] --> GCS[Cloud Storage / incoming]
+  GCS --> SENSOR[GCSObjectExistenceSensor]
+  SENSOR --> B[BigQuery Bronze\ncustomers_raw]
+  B --> S[BigQuery Silver\ncustomers_cleaned]
+  S --> G[BigQuery Gold\ncustomer_city_report]
+  G --> V[Reconciliation / validation]
+  GCS -. OBJECT_FINALIZE .-> PS[Pub/Sub topic]
+  PS -. notification .-> CR[Cloud Run event handler]
+  CR -. object_name config .-> EDAG[Unscheduled event DAG]
+  EDAG --> B
 ```
 
-**Architecture note:** The sensor DAG and event-driven DAG are separate execution paths. The sensor DAG is scheduled and waits for the configured object; the event DAG is unscheduled and expects an uploaded object name in its DAG-run configuration. The event-driven path requires the Pub/Sub consumer / Cloud Run handler to be deployed and configured for automatic upload-to-DAG triggering.
+The scheduled sensor DAG and event-driven DAG are separate execution paths. The sensor's `poke_interval` controls how often it checks during an active run; it does **not** set how often the DAG starts. The event path only triggers automatically when the notification, Pub/Sub delivery, Cloud Run handler, IAM permissions, and Airflow trigger call are all configured correctly.
 
-## 🔁 Data flow
+## Workflow
 
-```mermaid
-flowchart LR
-    A[1. Upload CSV] --> B[2. Detect file<br/>GCS sensor or event]
-    B --> C[3. Load Bronze]
-    C --> D[4. Clean / transform Silver]
-    D --> E[5. Aggregate Gold]
-    E --> F[6. Validate row counts]
-    F --> G[7. Review Airflow logs<br/>and BigQuery outputs]
-```
+1. Upload a CSV to the configured `incoming/` prefix in GCS.
+2. Start or wait for a sensor DAG run. `wait_for_csv` checks that the configured object exists.
+3. Load the CSV to BigQuery Bronze (`customers_raw`).
+4. Clean/standardize the data in Silver (`customers_cleaned`).
+5. Aggregate city-level metrics in Gold (`customer_city_report`).
+6. Run reconciliation and review task logs.
+7. Query the BigQuery tables to confirm results.
 
-1. Upload a CSV object into the configured `incoming/` path in Cloud Storage.
-2. The primary DAG's `wait_for_csv` task checks for the object using `GCSObjectExistenceSensor`.
-3. Load the raw input into the Bronze BigQuery table.
-4. Transform and clean data into Silver.
-5. Aggregate customer analytics into Gold.
-6. Run reconciliation checks and inspect task status/logs.
-7. Validate output counts and query results in BigQuery.
+## Main feature: GCS sensor
 
-## ⭐ Featured capability: GCS sensor
+The primary DAG is `customer_lakehouse_sensor_pipeline`. Its sensor task is `wait_for_csv`, configured by default to check `incoming/customers.csv`. Once the object exists, the downstream tasks run in sequence: `load_bronze` → `build_silver` → `build_gold` → `validate_reconciliation`.
 
-The main project emphasis is the **`GCSObjectExistenceSensor`** in `customer_lakehouse_sensor_pipeline`.
+### Sensor evidence
 
-- **Task ID:** `wait_for_csv`
-- **Object checked:** `incoming/customers.csv` (default configured object)
-- **Sensor polling:** configured to check periodically while the task is active.
-- **Purpose:** wait for the target object to exist before allowing downstream ingestion to run.
-- **Downstream tasks:** `load_bronze` → `build_silver` → `build_gold` → `validate_reconciliation`.
+**Sensor waits for the raw file**
 
-A sensor's `poke_interval` is the interval between checks during an active DAG run; it is **not** the schedule interval for starting the DAG. The sensor DAG's schedule is configured separately in the DAG definition.
+![Sensor waiting for raw file](docs/screenshots/09-sensor-waiting-for-file.png)
 
-### Sensor execution evidence
+**Sensor workflow graph**
 
-![Sensor DAG summary](cloudpulse-documentation/docs/screenshots/03-sensor-dag-run-summary.png)
+![GCS sensor task graph](docs/screenshots/06-gcs-sensor-task-graph.png)
 
-![Sensor task graph](cloudpulse-documentation/docs/screenshots/05-sensor-task-graph.png)
+**Successful pipeline graph**
 
-![Sensor execution logs](cloudpulse-documentation/docs/screenshots/06-sensor-task-logs.png)
+![Successful sensor pipeline graph](docs/screenshots/08-successful-sensor-pipeline-graph.png)
 
-## ⚡ Event-driven extension
+**Sensor detection logs**
 
-The repository also includes `customer_lakehouse_event_pipeline`, an unscheduled DAG intended to receive an uploaded object name through `dag_run.conf` and process that specific CSV.
+![Sensor detection logs](docs/screenshots/11-sensor-detection-logs.png)
 
-The intended event path is:
-
-1. Cloud Storage emits an `OBJECT_FINALIZE` notification.
-2. Pub/Sub receives the notification.
-3. A consumer such as Cloud Run parses the event and triggers the event DAG with the object name.
-4. The event DAG validates the path and runs Bronze → Silver → Gold → reconciliation.
-
-The screenshots document the event DAG and Pub/Sub resources. **Automatic triggering only works when the Pub/Sub subscription consumer/Cloud Run handler and its IAM/API configuration are deployed and connected.** Creating a topic or notification alone does not trigger Airflow.
-
-![All Airflow DAGs](cloudpulse-documentation/docs/screenshots/02-airflow-dags-overview.png)
-
-![Pub/Sub subscription](cloudpulse-documentation/docs/screenshots/08-pubsub-subscription.png)
-
-![Event DAG details](cloudpulse-documentation/docs/screenshots/11-event-dag-details.png)
-
-![Event DAG diagram](cloudpulse-documentation/docs/screenshots/12-event-dag-architecture.png)
-
-## 🧱 Data layers
+## BigQuery Bronze → Silver → Gold
 
 | Layer | Purpose | Example table |
 |---|---|---|
-| **Bronze** | Raw ingested source records | `customer_bronze_dev.customers_raw` |
-| **Silver** | Cleaned / standardized customer records | `customer_silver_dev.customers_cleaned` |
-| **Gold** | Aggregated analytics for reporting | `customer_gold_dev.customer_city_report` |
+| Bronze | Raw ingested records | `customer_bronze_dev.customers_raw` |
+| Silver | Cleaned and standardized records | `customer_silver_dev.customers_cleaned` |
+| Gold | City-level reporting / aggregation | `customer_gold_dev.customer_city_report` |
 
-The screenshots show one successful test run with **10 Bronze rows, 10 Silver rows, and 4 Gold city-level rows**. Results depend on the uploaded input CSV.
+The recorded test run showed **10 Bronze rows, 10 Silver rows, and 4 Gold city-level rows**. These are results from the supplied sample input, not a guarantee for every input file.
 
-![BigQuery output counts](cloudpulse-documentation/docs/screenshots/07-bigquery-bronze-silver-gold-results.png)
+### Bronze output
 
-## 🧰 Tools and services
+![Bronze layer query results](docs/screenshots/12-bronze-layer-query-results.png)
 
-- **Google Cloud Storage** — raw CSV landing zone and object-finalize event source.
-- **Cloud Composer / Apache Airflow** — workflow scheduling, sensors, task orchestration, and run monitoring.
-- **BigQuery** — Bronze, Silver, and Gold datasets and SQL transformations.
-- **Pub/Sub** — message topic for Cloud Storage upload notifications.
-- **Cloud Run** — intended event consumer / Airflow trigger service for the event-driven path.
-- **Terraform** — infrastructure provisioning and configuration.
-- **Python** — DAG logic, validation, and event handler code.
-- **SQL** — Silver cleaning and Gold aggregation.
-- **Git / GitHub** — version control and project documentation.
+### Silver output
 
-## 📁 Repository structure
+![Silver layer query results](docs/screenshots/13-silver-layer-query-results.png)
 
-```text
-cloudpulse-gcp-customer-lakehouse/
-├── .github/                   # GitHub workflows / repository automation
-├── cloudrun/                  # Event consumer / trigger handler
-├── dags/
-│   ├── customer_lakehouse_sensor_pipeline.py
-│   └── customer_lakehouse_event_pipeline.py
-├── data/                      # Sample CSV data
-├── docs/
-│   ├── screenshots/            # Numbered execution evidence
-│   └── architecture.md
-├── sql/                       # SQL transformations and queries
-├── terraform/
-│   ├── environments/dev/
-│   └── modules/
-├── tests/                     # Tests and validation
-├── requirements.txt
-├── requirements-dev.txt
-├── .gitignore
-├── LICENSE
-└── README.md
-```
+### Gold output
 
-## 🚀 Setup and deployment
+![Gold layer query results](docs/screenshots/14-gold-layer-query-results.png)
 
-> **Cost warning:** Cloud Composer can incur significant charges while running. Use a development project, monitor billing, and destroy resources when you have finished testing if you no longer need them.
+### Reconciliation
+
+![Reconciliation results](docs/screenshots/15-reconciliation-results.png)
+
+## Event-driven extension
+
+The repository also includes `customer_lakehouse_event_pipeline`, an unscheduled DAG that validates an object name supplied in `dag_run.conf` and processes that CSV. The intended chain is: GCS object-finalize notification → Pub/Sub → Cloud Run event handler → Airflow event DAG → Bronze/Silver/Gold → reconciliation. A topic or bucket notification alone is not sufficient to trigger Airflow; the consumer and permissions must also be deployed and connected.
+
+### Event pipeline diagram
+
+![Event pipeline task diagram](docs/screenshots/18-event-pipeline-task-diagram.png)
+
+### Event pipeline run details
+
+![Event pipeline run details](docs/screenshots/19-event-pipeline-run-details.png)
+
+### Successful event DAG run
+
+![Successful event pipeline run](docs/screenshots/20-event-pipeline-successful-run.png)
+
+### Pub/Sub and Cloud Run evidence
+
+![Pub/Sub subscription](docs/screenshots/16-pubsub-subscription.png)
+
+![Cloud Run trigger logs](docs/screenshots/17-cloud-run-trigger-logs.png)
+
+## Setup and execution
 
 ### Prerequisites
 
-- A Google Cloud project with billing enabled.
+- Google Cloud project with billing enabled.
 - `gcloud` CLI authenticated to the target project.
-- Terraform installed.
-- Python installed for local tests.
-- IAM permissions to enable APIs and create the required resources.
+- Terraform and Python installed.
+- IAM permissions to enable APIs and create the resources.
 
 ### 1. Clone the repository
 
@@ -179,7 +138,7 @@ git clone https://github.com/cloudwithpavan/cloudpulse-gcp-customer-lakehouse.gi
 cd cloudpulse-gcp-customer-lakehouse
 ```
 
-### 2. Configure Google Cloud
+### 2. Authenticate and set the project
 
 ```bash
 gcloud auth login
@@ -189,9 +148,11 @@ gcloud config set project YOUR_PROJECT_ID
 
 ### 3. Configure Terraform variables
 
-Review `terraform/environments/dev/terraform.tfvars.example` if present, or create your local `terraform.tfvars` based on the variables declared by the environment. Set your project ID, region, dataset location, and deployment options. Do **not** commit credentials, state files, or your private `terraform.tfvars`.
+Review the variables in `terraform/environments/dev/` and create a local `terraform.tfvars` from the example file if the repository contains one. Set the project ID, region, dataset location, and deployment options. Do not commit private `terraform.tfvars`, credentials, or Terraform state.
 
-### 4. Initialize and validate Terraform
+### 4. Initialize and validate
+
+Run from PowerShell at the repository root:
 
 ```powershell
 Set-Location terraform/environments/dev
@@ -201,7 +162,7 @@ terraform validate
 terraform plan
 ```
 
-Review the plan carefully before applying. Check especially for changes to existing Cloud Storage objects and Composer resources.
+Review the plan, especially any changes to Composer resources or existing Cloud Storage objects, before applying.
 
 ### 5. Apply infrastructure
 
@@ -209,28 +170,26 @@ Review the plan carefully before applying. Check especially for changes to exist
 terraform apply
 ```
 
-Type `yes` only after reviewing the plan. Terraform may enable APIs, create storage and BigQuery resources, provision Composer, and upload DAG files depending on the environment variables and configuration.
+Type `yes` only after reviewing the plan. The exact resources created depend on the Terraform configuration and variable values.
 
-### 6. Verify the sensor DAG
+### 6. Verify the sensor pipeline
 
-1. Open the Cloud Composer environment in the Google Cloud Console.
-2. Open the Airflow UI and locate `customer_lakehouse_sensor_pipeline`.
-3. Confirm the DAG is active.
-4. Upload the expected CSV object into the configured `incoming/` location.
-5. Trigger a run or wait for the configured schedule.
-6. Open the run graph and confirm `wait_for_csv`, `load_bronze`, `build_silver`, `build_gold`, and `validate_reconciliation` succeed.
-7. Query BigQuery to verify the results.
+1. Open the Cloud Composer environment and its Airflow UI.
+2. Locate and enable `customer_lakehouse_sensor_pipeline`.
+3. Upload the expected CSV to the configured `incoming/` object path.
+4. Trigger a run or wait for the DAG schedule.
+5. Confirm the sensor and downstream tasks succeed.
+6. Query Bronze, Silver, and Gold in BigQuery and inspect reconciliation output.
 
-### 7. Verify the event-driven DAG
+### 7. Verify the event-driven path
 
-1. Confirm the Pub/Sub topic and Cloud Storage notification exist.
-2. Confirm the event consumer / Cloud Run service is deployed and subscribed to the topic.
-3. Confirm the service account can receive Pub/Sub messages and trigger the Airflow DAG.
-4. Upload a new CSV and check Cloud Run / Pub/Sub logs.
-5. Open `customer_lakehouse_event_pipeline` and verify the run configuration contains the expected `object_name`.
-6. Validate downstream task status and BigQuery outputs.
+1. Confirm the GCS notification and Pub/Sub topic/subscription exist.
+2. Confirm the Cloud Run event handler is deployed and receives the notification.
+3. Verify its service account permissions for triggering the Airflow DAG.
+4. Upload a new CSV and inspect Cloud Run logs and the event DAG run configuration.
+5. Confirm downstream task success and validate the BigQuery outputs.
 
-### 8. Run tests
+### 8. Run local tests
 
 ```powershell
 Set-Location ..\..\..
@@ -238,114 +197,56 @@ python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
 
-Adapt test commands to the actual test configuration in the repository.
+Adapt test commands to the test files included in the checked-out repository.
 
-## 🔎 Validation and output evidence
+## Tools and services
 
-The `cloudpulse-documentation/docs/screenshots/` folder contains numbered screenshots from the working GCP console and Airflow UI, including:
+- **Google Cloud Storage:** CSV landing zone and object-finalize event source.
+- **Cloud Composer / Apache Airflow:** scheduling, sensor checks, and task orchestration.
+- **BigQuery:** Bronze, Silver, and Gold storage and SQL transformations.
+- **Pub/Sub:** delivery of GCS notifications.
+- **Cloud Run:** event consumer / Airflow trigger handler.
+- **Terraform:** infrastructure as code.
+- **Python and SQL:** pipeline logic, transformations, and validation.
+- **Git and GitHub:** source control and project sharing.
 
-- Airflow DAG list and status.
-- Sensor run summary and task graph.
-- Sensor task logs.
-- Pub/Sub subscription / notification evidence.
-- Event DAG details and diagram.
-- BigQuery query results.
+## Repository structure
 
-Use the evidence to understand the implemented path; the screenshots are point-in-time results, not a guarantee that deployed cloud resources are still active.
+```text
+cloudpulse-gcp-customer-lakehouse/
+├── cloudrun/
+├── dags/
+├── data/
+├── docs/
+│   ├── screenshots/
+│   └── architecture.md
+├── sql/
+├── terraform/
+│   ├── environments/dev/
+│   └── modules/
+├── tests/
+├── requirements.txt
+├── requirements-dev.txt
+├── .gitignore
+├── LICENSE
+└── README.md
+```
 
+## Screenshot index
 
-## 📸 Project execution evidence
+All selected project evidence is embedded above and also stored under `docs/screenshots/`. The archive additionally preserves the uploaded screenshot originals in `docs/screenshots/original-uploads/` for traceability, including alternate and timestamp-named captures. The GitHub repository page is not used as project execution evidence.
 
-The following screenshots show the actual cloud setup, Airflow execution, storage events, and BigQuery outputs. They are embedded in this README for quick review.
+## Security and cost notes
 
-### Cloud Composer environment
+- Cloud Composer can incur significant charges while running. Delete or disable resources when testing is complete, and check billing.
+- If you delete Composer manually, reconcile the Terraform configuration/state before running `terraform apply`, or Terraform may recreate it.
+- Never commit service-account keys, access tokens, `.terraform/`, Terraform state, local plan files, or private `.tfvars`.
+- Keep buckets private and use least-privilege IAM. Review Cloud Run authentication and Airflow trigger permissions before exposing an endpoint.
 
-![Cloud Composer environment](cloudpulse-documentation/docs/screenshots/01-gcp-airflow-environment.png)
+## Author
 
-### Airflow DAG overview
-
-![Airflow DAG overview](cloudpulse-documentation/docs/screenshots/02-airflow-dags-overview.png)
-
-### Sensor DAG run summary
-
-![Sensor DAG run summary](cloudpulse-documentation/docs/screenshots/03-sensor-dag-run-summary.png)
-
-### Sensor task graph
-
-![Sensor task graph](cloudpulse-documentation/docs/screenshots/05-sensor-task-graph.png)
-
-### Sensor task execution logs
-
-![Sensor task execution logs](cloudpulse-documentation/docs/screenshots/06-sensor-task-logs.png)
-
-### BigQuery Bronze, Silver, and Gold output
-
-![BigQuery Bronze, Silver, and Gold output](cloudpulse-documentation/docs/screenshots/07-bigquery-bronze-silver-gold-results.png)
-
-### Pub/Sub subscription
-
-![Pub/Sub subscription](cloudpulse-documentation/docs/screenshots/08-pubsub-subscription.png)
-
-### Cloud Logging evidence
-
-![Cloud Logging evidence](cloudpulse-documentation/docs/screenshots/09-cloud-logging.png)
-
-### Pub/Sub console
-
-![Pub/Sub console](cloudpulse-documentation/docs/screenshots/10-pubsub-console.png)
-
-### Event-driven DAG details
-
-![Event-driven DAG details](cloudpulse-documentation/docs/screenshots/11-event-dag-details.png)
-
-### Event-driven DAG architecture
-
-![Event-driven DAG architecture](cloudpulse-documentation/docs/screenshots/12-event-dag-architecture.png)
-
-### Event-driven DAG run history
-
-![Event-driven DAG run history](cloudpulse-documentation/docs/screenshots/13-event-dag-run-history.png)
-
-### Successful event-driven DAG run
-
-![Successful event-driven DAG run](cloudpulse-documentation/docs/screenshots/14-event-dag-run-success.png)
-
-### Sensor task details
-
-![Sensor task details](cloudpulse-documentation/docs/screenshots/15-sensor-task-details.png)
-
-### Successful sensor run
-
-![Successful sensor run](cloudpulse-documentation/docs/screenshots/16-sensor-successful-run.png)
-
-### CSV uploaded to Cloud Storage
-
-![CSV uploaded to Cloud Storage](cloudpulse-documentation/docs/screenshots/17-storage-csv-upload.png)
-
-### CSV object in the incoming storage path
-
-![CSV object in the incoming storage path](cloudpulse-documentation/docs/screenshots/18-storage-incoming-object.png)
-
-### Composer Airflow UI
-
-![Composer Airflow UI](cloudpulse-documentation/docs/screenshots/19-composer-airflow-ui.png)
-
-## 🔐 Security and cost notes
-
-- Never commit service-account JSON keys, access tokens, `.terraform/`, Terraform state files, local plan files, or private `.tfvars`.
-- Keep Cloud Storage buckets private and grant least-privilege IAM roles.
-- Review event handler authentication and Airflow API permissions before exposing a service endpoint.
-- Delete unused resources after testing, but inspect dependencies and Terraform state before destroying anything.
-
-## 👤 Author
-
-**Pavan Kumar**  
-GitHub: [@cloudwithpavan](https://github.com/cloudwithpavan)
+**Pavan Kumar** · [GitHub @cloudwithpavan](https://github.com/cloudwithpavan)
 
 ---
 
-<div align="center">
-
-**CloudPulse — From CSV landing to analytics-ready customer insights.**
-
-</div>
+*CloudPulse — from CSV landing to analytics-ready customer insights.*
